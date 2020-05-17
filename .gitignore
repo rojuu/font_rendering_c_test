@@ -1,0 +1,5 @@
+/.clangd
+/.vscode
+/build
+/build.bat
+/compile_commands.json
