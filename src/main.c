@@ -1,5 +1,3 @@
-#include "SDL2/SDL_render.h"
-#include "SDL2/SDL_surface.h"
 #include "common.h"
 
 #define SDL_MAIN_HANDLED
@@ -81,7 +79,6 @@ int main(int argc, char **argv)
         fprintf(stderr, "Failed to create window\n");
         return 1;
     }
-
 
     unsigned char fontBuffer[24<<20];
     stbtt_fontinfo font;

@@ -6,6 +6,8 @@ import argparse
 import json
 import pathlib
 
+cc = "clang"
+
 parser = argparse.ArgumentParser(description='Build script for the program.')
 parser.add_argument("--buildtype", choices=["release", "debug"], required=True)
 
@@ -55,7 +57,7 @@ else:
 args.extend(inc_arguments)
 args.extend(lib_arguments)
 
-cmd = ["clang"]
+cmd = [cc]
 cmd.extend(src_files)
 cmd.extend(args)
 
@@ -68,10 +70,10 @@ for f in src_files:
     command["directory"] = os.getcwd()
 
     c = ""
-    for cm in cmd:
-        c += cm + " "
+    for a in args:
+        c += a + " "
 
-    command["command"] = c
+    command["command"] = cc+" "+f+" "+c
     command["file"] = f
     compile_commands_json.append(command)
 
