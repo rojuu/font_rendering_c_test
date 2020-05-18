@@ -6,16 +6,17 @@ import argparse
 import json
 import pathlib
 
-cc = "clang"
-
 parser = argparse.ArgumentParser(description='Build script for the program.')
 parser.add_argument("--buildtype", choices=["release", "debug"], required=True)
+parser.add_argument("--cc", default="clang", help="compiler to use")
 
 if sys.platform == "win32":
     parser.add_argument("--win32libpath", help="path to prebuilt libs for win32",\
                         required=True)
 
 cmd_args = parser.parse_args()
+
+cc = cmd_args.cc
 
 if not os.path.exists('build'):
     os.makedirs('build')
