@@ -55,6 +55,7 @@ int main(int argc, char **argv)
     {
         FILE *file;
         fopen_s(&file, "c:/windows/fonts/arialbd.ttf", "rb"); //"Roboto-Regular.ttf", "rb");
+        // fopen_s(&file, "Roboto-Regular.ttf", "rb");
         fseek(file, 0, SEEK_END);
         long size = ftell(file);
         rewind(file);
@@ -135,14 +136,14 @@ int main(int argc, char **argv)
         SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
         SDL_RenderClear(renderer);
 
-        int x = 0, y = 0;
+        int x = 10, y = 200;
         for (int i = 0; i < arrlen(fontTextures); ++i) {
             SDL_Texture *texture = fontTextures[i];
             Vec2i size = sizes[i];
             Vec2i off = offs[i];
             SDL_Rect dstRect = {
-                .x = x, .y = y,
-                .w = size.x-off.x, .h = size.y-off.y,
+                .x = x+off.x, .y = y+off.y,
+                .w = size.x, .h = size.y,
             };
             SDL_Rect srcRect = {
                 .w = size.x/4, .h = size.y/4, // Why do I need to divide by 4??
@@ -150,7 +151,7 @@ int main(int argc, char **argv)
             };
             SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_ADD);
             SDL_RenderCopy(renderer, texture, &srcRect, &dstRect);
-            x+=size.x;
+            x+=size.x+off.x;
         }
 
         SDL_RenderPresent(renderer);
