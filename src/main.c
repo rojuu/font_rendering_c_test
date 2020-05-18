@@ -60,6 +60,8 @@ int main(int arg, char **argv)
 
 
 #if 1
+unsigned char fontBuffer[24<<20];
+
 int main(int argc, char **argv)
 {
     SDL_Init(SDL_INIT_VIDEO);
@@ -80,12 +82,14 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    unsigned char fontBuffer[24<<20];
     stbtt_fontinfo font;
     {
-        FILE *fs;
-        fopen_s(&fs, "Roboto-Reqular.ttf", "rb");
-        fread(fontBuffer, 1, 1000000, fs); // ROBUSTNESS: Use actual file size
+        FILE *file;
+        fopen_s(&file, "Roboto-Regular.ttf", "rb");
+        fseek(file, 0, SEEK_END);
+        long size = ftell(file);
+        rewind(file);
+        fread(fontBuffer, 1, size, file);
         stbtt_InitFont(&font, fontBuffer, 0);
     }
 
