@@ -5,6 +5,7 @@ project(${This})
 
 add_executable(${This}
     src/main.c
+    src/stb_ds.c
     src/stb_truetype.c
 )
 

@@ -3,10 +3,19 @@
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 
+#include "stb_ds.h"
 #include "stb_truetype.h"
 
 #define WIDTH  1280
 #define HEIGHT 720
+
+typedef struct Vec2i {
+    int32_t x, y;
+} Vec2i;
+
+typedef struct Vec2 {
+    float x, y;
+} Vec2;
 
 static uint32_t *getSurfaceColorPointer(SDL_Surface *surface, int x, int y)
 {
@@ -55,43 +64,46 @@ int main(int argc, char **argv)
 
     float fontScale = stbtt_ScaleForPixelHeight(&font, HEIGHT/3);
 
-    int fontAscent;
-    stbtt_GetFontVMetrics(&font, &fontAscent, 0, 0);
+    // int fontAscent;
+    // stbtt_GetFontVMetrics(&font, &fontAscent, 0, 0);
 
-    int fontBaseline = (int) (fontAscent*fontScale);
+    // int fontBaseline = (int) (fontAscent*fontScale);
 
-    int w = WIDTH, h = HEIGHT;
-    SDL_Surface *surface = SDL_CreateRGBSurface(0, w, h, 32, 0, 0, 0, 0);
-    if (!surface) {
-        fprintf(stderr, "Failed to create SDL_Surface: %s", SDL_GetError());
-        return 1;
-    }
+    // int w = WIDTH, h = HEIGHT;
+    // SDL_Surface *surface = SDL_CreateRGBSurface(0, w, h, 32, 0, 0, 0, 0);
+    // if (!surface) {
+    //     fprintf(stderr, "Failed to create SDL_Surface: %s", SDL_GetError());
+    //     return 1;
+    // }
 
-    SDL_LockSurface(surface);
+    SDL_Texture **fontTextures = NULL;
+    Vec2i *sizes = NULL;
+    Vec2i *offs = NULL;
+    char *text = "Heljo World!";
+    for (int ch = 0; text[ch]; ++ch) {
+        int w, h, xoff, yoff;
+        uint8_t *bmp = stbtt_GetCodepointBitmap(&font, fontScale, fontScale, text[ch], &w, &h, &xoff, &yoff);
 
-    float xpos = 2; // leave a little padding in case the character extends left
-    int ch = 0;
-    char *text = "Heljo World!"; // intentionally misspelled to show 'lj' brokenness
-    while (text[ch]) {
-        int advance, lsb;
-        stbtt_GetCodepointHMetrics(&font, text[ch], &advance, &lsb);
-
-        float x_shift = xpos - (float)floor(xpos);
-        int x0, y0, x1, y1;
-        stbtt_GetCodepointBitmapBoxSubpixel(&font, text[ch], fontScale, fontScale, x_shift, 0, &x0, &y0, &x1, &y1);
-
-        uint32_t *ptr = getSurfaceColorPointer(surface, (int)xpos + x0, fontBaseline + y0);
-        // ptr = surface->pixels;
-        // stbtt_MakeCodepointBitmap(&font, (uint8_t *)ptr, x1-x0, y1-y0, surface->pitch, fontScale, fontScale, text[ch]);
-        stbtt_MakeCodepointBitmapSubpixel(&font, (uint8_t *)ptr, x1-x0, y1-y0, surface->pitch, fontScale, fontScale, x_shift, 0, text[ch]);
-
-        xpos += (advance * fontScale);
-        if (text[ch+1]) {
-            xpos += fontScale*stbtt_GetCodepointKernAdvance(&font, text[ch],text[ch+1]);
+        SDL_Surface *surface = SDL_CreateRGBSurface(0, w, h, 32, 0, 0, 0, 0);
+        if (!surface) {
+            fprintf(stderr, "Failed to create SDL_Surface: %s", SDL_GetError());
+            return 1;
         }
-        ch+=1;
+
+        SDL_LockSurface(surface);
+        memcpy(surface->pixels, bmp, w * h);
+        SDL_UnlockSurface(surface);
+
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+        SDL_FreeSurface(surface);
+        arrpush(fontTextures, texture);
+        Vec2i size = { w, h };
+        arrpush(sizes, size);
+        Vec2i off = { xoff, yoff };
+        arrpush(offs, off);
     }
 
+    // SDL_LockSurface(surface);
     // for (int i = 0; i < surface->w; ++i) {
     //     for (int j = 0; j < surface->h; ++j) {
     //         setSurfacePixelColor(surface, i, j,
@@ -100,10 +112,10 @@ int main(int argc, char **argv)
     //             255, 255);
     //     }
     // }
-    SDL_UnlockSurface(surface);
+    // SDL_UnlockSurface(surface);
 
-    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_FreeSurface(surface);
+    // SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+    // SDL_FreeSurface(surface);
 
     bool quit = false;
     while (!quit) {
@@ -120,19 +132,34 @@ int main(int argc, char **argv)
             }
         }
 
-        SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
+        SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
         SDL_RenderClear(renderer);
 
-        // SDL_Rect dstRect = {
-        //     .x = 256, .y = 256,
-        //     .w = 256, .h = 256,
-        // };
-        SDL_RenderCopy(renderer, texture, NULL, NULL);// &dstRect);
+        int x = 0, y = 0;
+        for (int i = 0; i < arrlen(fontTextures); ++i) {
+            SDL_Texture *texture = fontTextures[i];
+            Vec2i size = sizes[i];
+            Vec2i off = offs[i];
+            SDL_Rect dstRect = {
+                .x = x, .y = y,
+                .w = size.x-off.x, .h = size.y-off.y,
+            };
+            SDL_Rect srcRect = {
+                .w = size.x/4, .h = size.y/4, // Why do I need to divide by 4??
+                .x = 0, .y = 0,
+            };
+            SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_ADD);
+            SDL_RenderCopy(renderer, texture, &srcRect, &dstRect);
+            x+=size.x;
+        }
 
         SDL_RenderPresent(renderer);
     }
 
-    SDL_DestroyTexture(texture);
+    for (int i = 0; i < arrlen(fontTextures); ++i) {
+        SDL_Texture *texture = fontTextures[i];
+        SDL_DestroyTexture(texture);
+    }
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 
