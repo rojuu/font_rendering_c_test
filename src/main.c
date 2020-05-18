@@ -20,8 +20,6 @@ static void setSurfacePixelColor(SDL_Surface *surface, int x, int y, uint8_t r, 
     *getSurfaceColorPointer(surface, x, y) = color;
 }
 
-#if 1
-
 unsigned char fontBuffer[24<<20];
 
 int main(int argc, char **argv)
@@ -71,7 +69,6 @@ int main(int argc, char **argv)
 
     SDL_LockSurface(surface);
 
-
     float xpos = 2; // leave a little padding in case the character extends left
     int ch = 0;
     char *text = "Heljo World!"; // intentionally misspelled to show 'lj' brokenness
@@ -83,7 +80,7 @@ int main(int argc, char **argv)
         int x0, y0, x1, y1;
         stbtt_GetCodepointBitmapBoxSubpixel(&font, text[ch], fontScale, fontScale, x_shift, 0, &x0, &y0, &x1, &y1);
 
-        uint32_t *ptr = getSurfaceColorPointer(surface, xpos + x0, fontBaseline + y0);
+        uint32_t *ptr = getSurfaceColorPointer(surface, (int)xpos + x0, fontBaseline + y0);
         // ptr = surface->pixels;
         // stbtt_MakeCodepointBitmap(&font, (uint8_t *)ptr, x1-x0, y1-y0, surface->pitch, fontScale, fontScale, text[ch]);
         stbtt_MakeCodepointBitmapSubpixel(&font, (uint8_t *)ptr, x1-x0, y1-y0, surface->pitch, fontScale, fontScale, x_shift, 0, text[ch]);
@@ -143,4 +140,3 @@ int main(int argc, char **argv)
 
     return 0;
 }
-#endif
