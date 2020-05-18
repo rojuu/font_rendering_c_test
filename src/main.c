@@ -8,58 +8,20 @@
 #define WIDTH  1280
 #define HEIGHT 720
 
-#if 0
-unsigned char buffer[24<<20];
-unsigned char screen[20][79];
-
-int main(int arg, char **argv)
+static uint32_t *getSurfaceColorPointer(SDL_Surface *surface, int x, int y)
 {
-    int i,j,ascent,baseline,ch=0;
-
-    stbtt_fontinfo font;
-    {
-        FILE *fs;
-        fopen_s(&fs, "Roboto-Reqular.ttf", "rb");
-        fread(buffer, 1, 1000000, fs);
-        stbtt_InitFont(&font, buffer, 0);
-    }
-
-    float scale = stbtt_ScaleForPixelHeight(&font, 15);
-    stbtt_GetFontVMetrics(&font, &ascent,0,0);
-    baseline = (int) (ascent*scale);
-
-    char *text = "Heljo World!"; // intentionally misspelled to show 'lj' brokenness
-    float xpos=2; // leave a little padding in case the character extends left
-    while (text[ch]) {
-        int advance,lsb,x0,y0,x1,y1;
-        float x_shift = xpos - (float) floor(xpos);
-        stbtt_GetCodepointHMetrics(&font, text[ch], &advance, &lsb);
-        stbtt_GetCodepointBitmapBoxSubpixel(&font, text[ch], scale,scale,x_shift,0, &x0,&y0,&x1,&y1);
-        stbtt_MakeCodepointBitmapSubpixel(&font, &screen[baseline + y0][(int) xpos + x0], x1-x0,y1-y0, 79, scale,scale,x_shift,0, text[ch]);
-        // note that this stomps the old data, so where character boxes overlap (e.g. 'lj') it's wrong
-        // because this API is really for baking character bitmaps into textures. if you want to render
-        // a sequence of characters, you really need to render each bitmap to a temp buffer, then
-        // "alpha blend" that into the working buffer
-        xpos += (advance * scale);
-        if (text[ch+1]) {
-            xpos += scale*stbtt_GetCodepointKernAdvance(&font, text[ch],text[ch+1]);
-        }
-        ++ch;
-    }
-
-    for (j=0; j < 20; ++j) {
-        for (i=0; i < 78; ++i) {
-            putchar(" .:ioVM@"[screen[j][i]>>5]);
-        }
-        putchar('\n');
-    }
-
-    return 0;
+    uint32_t *ptr = ((uint32_t *)surface->pixels) + y * surface->h + x;
+    return ptr;
 }
-#endif
 
+static void setSurfacePixelColor(SDL_Surface *surface, int x, int y, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+{
+    uint32_t color = SDL_MapRGBA(surface->format, r, g, b, a);
+    *getSurfaceColorPointer(surface, x, y) = color;
+}
 
 #if 1
+
 unsigned char fontBuffer[24<<20];
 
 int main(int argc, char **argv)
@@ -85,7 +47,7 @@ int main(int argc, char **argv)
     stbtt_fontinfo font;
     {
         FILE *file;
-        fopen_s(&file, "Roboto-Regular.ttf", "rb");
+        fopen_s(&file, "c:/windows/fonts/arialbd.ttf", "rb"); //"Roboto-Regular.ttf", "rb");
         fseek(file, 0, SEEK_END);
         long size = ftell(file);
         rewind(file);
@@ -93,14 +55,14 @@ int main(int argc, char **argv)
         stbtt_InitFont(&font, fontBuffer, 0);
     }
 
-    float fontScale = stbtt_ScaleForPixelHeight(&font, HEIGHT);
+    float fontScale = stbtt_ScaleForPixelHeight(&font, HEIGHT/3);
 
     int fontAscent;
     stbtt_GetFontVMetrics(&font, &fontAscent, 0, 0);
 
     int fontBaseline = (int) (fontAscent*fontScale);
 
-    int w = 128, h = 128;
+    int w = WIDTH, h = HEIGHT;
     SDL_Surface *surface = SDL_CreateRGBSurface(0, w, h, 32, 0, 0, 0, 0);
     if (!surface) {
         fprintf(stderr, "Failed to create SDL_Surface: %s", SDL_GetError());
@@ -108,17 +70,39 @@ int main(int argc, char **argv)
     }
 
     SDL_LockSurface(surface);
-    for (int i = 0; i < surface->h; ++i) {
-        for (int j = 0; j < surface->w; ++j) {
-            uint32_t color = SDL_MapRGBA(
-                surface->format,
-                (j / (float)surface->w) * 255,
-                (i / (float)surface->h) * 255,
-                255, 255
-            );
-            *(((uint32_t *)surface->pixels) + i * surface->h + j) = color;
+
+
+    float xpos = 2; // leave a little padding in case the character extends left
+    int ch = 0;
+    char *text = "Heljo World!"; // intentionally misspelled to show 'lj' brokenness
+    while (text[ch]) {
+        int advance, lsb;
+        stbtt_GetCodepointHMetrics(&font, text[ch], &advance, &lsb);
+
+        float x_shift = xpos - (float)floor(xpos);
+        int x0, y0, x1, y1;
+        stbtt_GetCodepointBitmapBoxSubpixel(&font, text[ch], fontScale, fontScale, x_shift, 0, &x0, &y0, &x1, &y1);
+
+        uint32_t *ptr = getSurfaceColorPointer(surface, xpos + x0, fontBaseline + y0);
+        // ptr = surface->pixels;
+        // stbtt_MakeCodepointBitmap(&font, (uint8_t *)ptr, x1-x0, y1-y0, surface->pitch, fontScale, fontScale, text[ch]);
+        stbtt_MakeCodepointBitmapSubpixel(&font, (uint8_t *)ptr, x1-x0, y1-y0, surface->pitch, fontScale, fontScale, x_shift, 0, text[ch]);
+
+        xpos += (advance * fontScale);
+        if (text[ch+1]) {
+            xpos += fontScale*stbtt_GetCodepointKernAdvance(&font, text[ch],text[ch+1]);
         }
+        ch+=1;
     }
+
+    // for (int i = 0; i < surface->w; ++i) {
+    //     for (int j = 0; j < surface->h; ++j) {
+    //         setSurfacePixelColor(surface, i, j,
+    //             (i / (float)surface->w) * 255,
+    //             (j / (float)surface->h) * 255,
+    //             255, 255);
+    //     }
+    // }
     SDL_UnlockSurface(surface);
 
     SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
@@ -139,14 +123,14 @@ int main(int argc, char **argv)
             }
         }
 
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
         SDL_RenderClear(renderer);
 
-        SDL_Rect dstRect = {
-            .x = 100, .y = 100,
-            .w = 256, .h = 256,
-        };
-        SDL_RenderCopy(renderer, texture, NULL, &dstRect);
+        // SDL_Rect dstRect = {
+        //     .x = 256, .y = 256,
+        //     .w = 256, .h = 256,
+        // };
+        SDL_RenderCopy(renderer, texture, NULL, NULL);// &dstRect);
 
         SDL_RenderPresent(renderer);
     }
