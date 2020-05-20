@@ -54,7 +54,7 @@ int main(int argc, char **argv)
     stbtt_fontinfo font;
     {
         FILE *file;
-        fopen_s(&file, "c:/windows/fonts/arialbd.ttf", "rb"); //"Roboto-Regular.ttf", "rb");
+        fopen_s(&file, "Roboto-Regular.ttf", "rb");
         // fopen_s(&file, "Roboto-Regular.ttf", "rb");
         fseek(file, 0, SEEK_END);
         long size = ftell(file);
@@ -64,18 +64,6 @@ int main(int argc, char **argv)
     }
 
     float fontScale = stbtt_ScaleForPixelHeight(&font, HEIGHT/2.5);
-
-    // int fontAscent;
-    // stbtt_GetFontVMetrics(&font, &fontAscent, 0, 0);
-
-    // int fontBaseline = (int) (fontAscent*fontScale);
-
-    // int w = WIDTH, h = HEIGHT;
-    // SDL_Surface *surface = SDL_CreateRGBSurface(0, w, h, 32, 0, 0, 0, 0);
-    // if (!surface) {
-    //     fprintf(stderr, "Failed to create SDL_Surface: %s", SDL_GetError());
-    //     return 1;
-    // }
 
     SDL_Texture **fontTextures = NULL;
     Vec2i *sizes = NULL;
@@ -109,20 +97,6 @@ int main(int argc, char **argv)
         arrpush(offs, off);
     }
 
-    // SDL_LockSurface(surface);
-    // for (int i = 0; i < surface->w; ++i) {
-    //     for (int j = 0; j < surface->h; ++j) {
-    //         setSurfacePixelColor(surface, i, j,
-    //             (i / (float)surface->w) * 255,
-    //             (j / (float)surface->h) * 255,
-    //             255, 255);
-    //     }
-    // }
-    // SDL_UnlockSurface(surface);
-
-    // SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
-    // SDL_FreeSurface(surface);
-
     bool quit = false;
     while (!quit) {
         SDL_Event sdlEvent;
@@ -141,7 +115,7 @@ int main(int argc, char **argv)
         SDL_SetRenderDrawColor(renderer, 91, 0, 176, 255);
         SDL_RenderClear(renderer);
 
-        int x = 10, y = 400;
+        int x = 70, y = 400;
         for (int i = 0; i < arrlen(fontTextures); ++i) {
             SDL_Texture *texture = fontTextures[i];
             Vec2i size = sizes[i];
