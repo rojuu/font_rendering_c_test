@@ -19,7 +19,7 @@ typedef struct Vec2 {
 
 static uint32_t *getSurfaceColorPointer(SDL_Surface *surface, int x, int y)
 {
-    uint32_t *ptr = ((uint32_t *)surface->pixels) + y * surface->h + x;
+    uint32_t *ptr = ((uint32_t *)surface->pixels) + y * surface->w + x;
     return ptr;
 }
 
@@ -63,7 +63,7 @@ int main(int argc, char **argv)
         stbtt_InitFont(&font, fontBuffer, 0);
     }
 
-    float fontScale = stbtt_ScaleForPixelHeight(&font, HEIGHT/3);
+    float fontScale = stbtt_ScaleForPixelHeight(&font, HEIGHT/2.5);
 
     // int fontAscent;
     // stbtt_GetFontVMetrics(&font, &fontAscent, 0, 0);
@@ -92,7 +92,12 @@ int main(int argc, char **argv)
         }
 
         SDL_LockSurface(surface);
-        memcpy(surface->pixels, bmp, w * h);
+        for (int i = 0; i < surface->w; ++i) {
+            for (int j = 0; j < surface->h; ++j) {
+                uint8_t alpha = bmp[j * surface->w + i];
+                setSurfacePixelColor(surface, i, j, alpha, alpha, alpha, alpha);
+            }
+        }
         SDL_UnlockSurface(surface);
 
         SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
@@ -133,10 +138,10 @@ int main(int argc, char **argv)
             }
         }
 
-        SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
+        SDL_SetRenderDrawColor(renderer, 91, 0, 176, 255);
         SDL_RenderClear(renderer);
 
-        int x = 10, y = 200;
+        int x = 10, y = 400;
         for (int i = 0; i < arrlen(fontTextures); ++i) {
             SDL_Texture *texture = fontTextures[i];
             Vec2i size = sizes[i];
@@ -146,7 +151,7 @@ int main(int argc, char **argv)
                 .w = size.x, .h = size.y,
             };
             SDL_Rect srcRect = {
-                .w = size.x/4, .h = size.y/4, // Why do I need to divide by 4??
+                .w = size.x, .h = size.y,
                 .x = 0, .y = 0,
             };
             SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_ADD);
