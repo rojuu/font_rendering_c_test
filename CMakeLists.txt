@@ -4,19 +4,30 @@ set(This cplayground)
 project(${This})
 
 add_executable(${This}
+    src/common.h
+    src/utils.h
     src/main.c
+    src/renderer.h
+    src/renderer.c
+    src/stb_ds.h
     src/stb_ds.c
+    src/stb_truetype.h
     src/stb_truetype.c
 )
 
-# Using prebuild binaries for win32, see README.md
-if (WIN32)
-    set(WIN32_LIB_PATH CACHE PATH "Path to pre-built win32 libs")
+if(MSVC)
+    set(CPG_WIN32_ENABLE_CONSOLE OFF CACHE BOOL "If set to TRUE, uses subsystem:console, otherwise (by default) subsystem:windows")
 
-    #SDL2
-    target_include_directories(${This} PRIVATE ${WIN32_LIB_PATH}/SDL2/include)
-    target_link_directories(${This} PRIVATE ${WIN32_LIB_PATH}/SDL2/lib/x64)
-    configure_file(${WIN32_LIB_PATH}/SDL2/lib/x64/SDL2.dll ${CMAKE_CURRENT_BINARY_DIR}/SDL2.dll COPYONLY)
+    set(win32_extra_flags)
+    if (CPG_WIN32_ENABLE_CONSOLE)
+        target_link_options(${This} PRIVATE -subsystem:console)
+    else()
+        set(win32_extra_flags ${win32_extra_flags} -DWIN32_WINMAIN=1)
+        target_link_options(${This} PRIVATE -subsystem:windows)
+    endif()
+    target_compile_options(${This} PRIVATE -wd6011 -wd4996 ${win32_extra_flags})
 endif()
 
-target_link_libraries(${This} PRIVATE SDL2)
+add_subdirectory(deps/SDL2-2.0.12)
+
+target_link_libraries(${This} PRIVATE SDL2-static)

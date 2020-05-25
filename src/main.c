@@ -1,148 +1,84 @@
 #include "common.h"
 
 #define SDL_MAIN_HANDLED
-#include <SDL2/SDL.h>
+#include "SDL.h"
 
 #include "stb_ds.h"
 #include "stb_truetype.h"
 
+#include "renderer.h"
+
 #define WIDTH  1280
 #define HEIGHT 720
 
-typedef struct Vec2i {
-    int32_t x, y;
-} Vec2i;
-
-typedef struct Vec2 {
-    float x, y;
-} Vec2;
-
-static uint32_t *getSurfaceColorPointer(SDL_Surface *surface, int x, int y)
+#ifdef WIN32_WINMAIN
+int WinMain()
 {
-    uint32_t *ptr = ((uint32_t *)surface->pixels) + y * surface->w + x;
-    return ptr;
-}
-
-static void setSurfacePixelColor(SDL_Surface *surface, int x, int y, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+#else
+int main()
 {
-    uint32_t color = SDL_MapRGBA(surface->format, r, g, b, a);
-    *getSurfaceColorPointer(surface, x, y) = color;
-}
-
-unsigned char fontBuffer[24<<20];
-
-int main(int argc, char **argv)
-{
+#endif
     SDL_Init(SDL_INIT_VIDEO);
     SDL_Window *window = SDL_CreateWindow(
         "cplayground",
         SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
         WIDTH, HEIGHT,
-        SDL_WINDOW_OPENGL|SDL_WINDOW_MOUSE_CAPTURE
+        SDL_WINDOW_MOUSE_CAPTURE
     );
 
-    SDL_Renderer *renderer = SDL_CreateRenderer(
-        window, -1,
-        SDL_RENDERER_ACCELERATED|SDL_RENDERER_PRESENTVSYNC
-    );
-
-    if (!window) {
+    if (!window)
+    {
         fprintf(stderr, "Failed to create window\n");
         return 1;
     }
 
-    stbtt_fontinfo font;
+    if (!renderer_init(window))
     {
-        FILE *file;
-        fopen_s(&file, "Roboto-Regular.ttf", "rb");
-        // fopen_s(&file, "Roboto-Regular.ttf", "rb");
-        fseek(file, 0, SEEK_END);
-        long size = ftell(file);
-        rewind(file);
-        fread(fontBuffer, 1, size, file);
-        stbtt_InitFont(&font, fontBuffer, 0);
-    }
-
-    float fontScale = stbtt_ScaleForPixelHeight(&font, HEIGHT/2.5);
-
-    SDL_Texture **fontTextures = NULL;
-    Vec2i *sizes = NULL;
-    Vec2i *offs = NULL;
-    char *text = "Heljo World!";
-    for (int ch = 0; text[ch]; ++ch) {
-        int w, h, xoff, yoff;
-        uint8_t *bmp = stbtt_GetCodepointBitmap(&font, fontScale, fontScale, text[ch], &w, &h, &xoff, &yoff);
-
-        SDL_Surface *surface = SDL_CreateRGBSurface(0, w, h, 32, 0, 0, 0, 0);
-        if (!surface) {
-            fprintf(stderr, "Failed to create SDL_Surface: %s", SDL_GetError());
-            return 1;
-        }
-
-        SDL_LockSurface(surface);
-        for (int i = 0; i < surface->w; ++i) {
-            for (int j = 0; j < surface->h; ++j) {
-                uint8_t alpha = bmp[j * surface->w + i];
-                setSurfacePixelColor(surface, i, j, alpha, alpha, alpha, alpha);
-            }
-        }
-        SDL_UnlockSurface(surface);
-
-        SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
-        SDL_FreeSurface(surface);
-        arrpush(fontTextures, texture);
-        Vec2i size = { w, h };
-        arrpush(sizes, size);
-        Vec2i off = { xoff, yoff };
-        arrpush(offs, off);
+        fprintf(stderr, "Failed to init renderer\n");
+        return 1;
     }
 
     bool quit = false;
-    while (!quit) {
-        SDL_Event sdlEvent;
-        while (SDL_PollEvent(&sdlEvent)) {
-            uint32_t type = sdlEvent.type;
-            if (type == SDL_QUIT) {
-                quit = true;
-            }
-            if (type == SDL_KEYDOWN) {
-                if (sdlEvent.key.keysym.sym == SDLK_ESCAPE) {
+    while (!quit)
+    {
+        SDL_Event sdl_event;
+        while (SDL_PollEvent(&sdl_event))
+        {
+            uint32_t type = sdl_event.type;
+            switch (type)
+            {
+                case SDL_QUIT:
+                {
                     quit = true;
-                }
+                } break;
+
+                case SDL_KEYDOWN:
+                {
+                    if (sdl_event.key.keysym.sym == SDLK_ESCAPE)
+                    {
+                        quit = true;
+                    }
+                } break;
+
+                default: break;
             }
         }
 
-        SDL_SetRenderDrawColor(renderer, 91, 0, 176, 255);
-        SDL_RenderClear(renderer);
+        renderer_clear(91, 0, 176);
 
-        int x = 70, y = 400;
-        for (int i = 0; i < arrlen(fontTextures); ++i) {
-            SDL_Texture *texture = fontTextures[i];
-            Vec2i size = sizes[i];
-            Vec2i off = offs[i];
-            SDL_Rect dstRect = {
-                .x = x+off.x, .y = y+off.y,
-                .w = size.x, .h = size.y,
-            };
-            SDL_Rect srcRect = {
-                .w = size.x, .h = size.y,
-                .x = 0, .y = 0,
-            };
-            SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_ADD);
-            SDL_RenderCopy(renderer, texture, &srcRect, &dstRect);
-            x+=size.x+off.x;
-        }
+        renderer_print_text("Heljo world!", 24, 35, 200);
+        renderer_print_text("Wassup world!", 24, 35, 250);
+        renderer_print_text("Heljo world!", 32, 35, 350);
+        renderer_print_text("Wassup world!", 32, 35, 400);
+        renderer_print_text("Wazzzaaaa!", 32, 35, 500);
+        renderer_print_text("Larger text?", 128, WIDTH/2 - 100, HEIGHT/2);
 
-        SDL_RenderPresent(renderer);
+        renderer_present();
     }
 
-    for (int i = 0; i < arrlen(fontTextures); ++i) {
-        SDL_Texture *texture = fontTextures[i];
-        SDL_DestroyTexture(texture);
-    }
-    SDL_DestroyRenderer(renderer);
+    renderer_deinit();
+
     SDL_DestroyWindow(window);
-
     SDL_Quit();
 
     return 0;

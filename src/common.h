@@ -1,8 +1,11 @@
-#ifndef COMMON_H
-#define COMMON_H
+#ifndef _common_h
+#define _common_h
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 
-#endif
+#include "utils.h"
+
+#endif /* _common_h */
