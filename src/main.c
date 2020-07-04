@@ -22,12 +22,12 @@ int main()
         SDL_WINDOWPOS_UNDEFINED, WIDTH, HEIGHT, SDL_WINDOW_MOUSE_CAPTURE);
 
     if (!window) {
-        fprintf(stderr, "Failed to create window\n");
+        fprintf(stderr, "Failed to create window: %s\n", SDL_GetError());
         return 1;
     }
 
     if (!renderer_init(window)) {
-        fprintf(stderr, "Failed to init renderer\n");
+        fprintf(stderr, "Failed to init renderer: %s\n", SDL_GetError());
         return 1;
     }
 
