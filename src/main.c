@@ -8,59 +8,47 @@
 
 #include "renderer.h"
 
-#define WIDTH  1280
+#define WIDTH 1280
 #define HEIGHT 720
 
 #ifdef WIN32_WINMAIN
 int WinMain()
-{
 #else
 int main()
-{
 #endif
+{
     SDL_Init(SDL_INIT_VIDEO);
-    SDL_Window *window = SDL_CreateWindow(
-        "cplayground",
-        SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-        WIDTH, HEIGHT,
-        SDL_WINDOW_MOUSE_CAPTURE
-    );
+    SDL_Window *window = SDL_CreateWindow("cplayground", SDL_WINDOWPOS_UNDEFINED,
+        SDL_WINDOWPOS_UNDEFINED, WIDTH, HEIGHT, SDL_WINDOW_MOUSE_CAPTURE);
 
-    if (!window)
-    {
+    if (!window) {
         fprintf(stderr, "Failed to create window\n");
         return 1;
     }
 
-    if (!renderer_init(window))
-    {
+    if (!renderer_init(window)) {
         fprintf(stderr, "Failed to init renderer\n");
         return 1;
     }
 
     bool quit = false;
-    while (!quit)
-    {
+    while (!quit) {
         SDL_Event sdl_event;
-        while (SDL_PollEvent(&sdl_event))
-        {
+        while (SDL_PollEvent(&sdl_event)) {
             uint32_t type = sdl_event.type;
-            switch (type)
-            {
-                case SDL_QUIT:
-                {
+            switch (type) {
+            case SDL_QUIT: {
+                quit = true;
+            } break;
+
+            case SDL_KEYDOWN: {
+                if (sdl_event.key.keysym.sym == SDLK_ESCAPE) {
                     quit = true;
-                } break;
+                }
+            } break;
 
-                case SDL_KEYDOWN:
-                {
-                    if (sdl_event.key.keysym.sym == SDLK_ESCAPE)
-                    {
-                        quit = true;
-                    }
-                } break;
-
-                default: break;
+            default:
+                break;
             }
         }
 
@@ -71,7 +59,7 @@ int main()
         renderer_print_text("Heljo world!", 32, 35, 350);
         renderer_print_text("Wassup world!", 32, 35, 400);
         renderer_print_text("Wazzzaaaa!", 32, 35, 500);
-        renderer_print_text("Larger text?", 128, WIDTH/2 - 100, HEIGHT/2);
+        renderer_print_text("Larger text?", 128, WIDTH / 2 - 100, HEIGHT / 2);
 
         renderer_present();
     }

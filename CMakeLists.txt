@@ -4,9 +4,10 @@ set(This cplayground)
 project(${This})
 
 add_executable(${This}
+    src/main.c
     src/common.h
     src/utils.h
-    src/main.c
+    src/utils.c
     src/renderer.h
     src/renderer.c
     src/stb_ds.h

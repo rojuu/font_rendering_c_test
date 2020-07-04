@@ -8,7 +8,6 @@ typedef struct SDL_Window SDL_Window;
 bool renderer_init(SDL_Window *window);
 void renderer_deinit(void);
 
-
 void renderer_clear(uint8_t r, uint8_t g, uint8_t b);
 void renderer_present(void);
 
